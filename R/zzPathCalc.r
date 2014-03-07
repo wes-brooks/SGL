@@ -1,4 +1,4 @@
-betterPathCalc <- function(data, index, alpha = 0.95, min.frac = 0.05, nlam = 20, type = "linear") {
+betterPathCalc <- function(data, index, weights, alpha = 0.95, min.frac = 0.05, nlam = 20, type = "linear") {
   reset <- 10
   step <- 1
   gamma <- 0.8
@@ -158,7 +158,7 @@ betterPathCalc <- function(data, index, alpha = 0.95, min.frac = 0.05, nlam = 20
     for (i in 1:num.groups) {
       ind <- groups[i]
       X.fit <- X[,which(index == ind)]
-      cors <- t(X.fit) %*% resp
+      cors <- t(X.fit) %*% diag(weights) %*% resp
       ord.cors <- sort(abs(cors), decreasing = TRUE)
 
       if(length(ord.cors) > 1) { 
@@ -204,18 +204,18 @@ betterPathCalc <- function(data, index, alpha = 0.95, min.frac = 0.05, nlam = 20
     }
   }
   if (alpha == 1) {
-    lambda.max <- abs(t(X) %*% resp)
+    lambda.max <- abs(t(X) %*% diag(weights) %*% resp)
   }
   if(alpha == 0) {
     for (i in 1:num.groups) {
       ind <- groups[i]
       X.fit <- X[,which(index == ind)]
-      cors <- t(X.fit) %*% resp
+      cors <- t(X.fit) %*% diag(weights) %*% resp
       lambda.max[i] <- sqrt(sum(cors^2)) / sqrt(group.length[i])
     }
   }
   max.lam <- max(lambda.max)
   min.lam <- min.frac*max.lam
   lambdas <- exp(seq(log(max.lam),log(min.lam), (log(min.lam) - log(max.lam))/(nlam-1)))
-  return(lambdas/nrow(X))
+  return(lambdas/sum(weights))
 }

@@ -515,29 +515,37 @@ void Cox(int *riskSetInd, int *riskSet, int *numDeath, int *status, int *nDeath,
 
 
 //////////////////////////////////
-void linGradCalc(int *nrow, double *eta, double *y, double *ldot)
+void linGradCalc(int *nrow, double *eta, double *y, double *w, double *ldot)
 {
+  double sumw = 0;
   for(int i = 0; i < nrow[0]; i++)
   {
-    ldot[i] = (eta[i] - y[i])/nrow[0];  /* OR MAYBE NOT? */
+    sumw = sumw + w[i];
+  }
+
+  for(int i = 0; i < nrow[0]; i++)
+  {
+    ldot[i] = w[i]*(eta[i] - y[i])/sumw;  /* OR MAYBE NOT? */
   }
 }
 
 
-double linNegLogLikelihoodCalc(int *nrow, double *eta, double *y)
+double linNegLogLikelihoodCalc(int *nrow, double *eta, double *y, double *w)
 {
   double squareSum = 0;
+  double sumw = 0;
 
   for(int i = 0; i < nrow[0]; i++)
   {
-    squareSum = squareSum + pow(eta[i] - y[i], 2)/2; 
+    squareSum = squareSum + w[i]*pow(eta[i] - y[i], 2)/2; 
+    sumw = sumw + w[i];
   }
 
-  return squareSum/nrow[0];   /* OR MAYBE NOT? */
+  return squareSum/sumw;   /* OR MAYBE NOT? */
 }
 
 
-void linSolver(double *X, double *y, int* index, int *nrow, int *ncol, int *numGroup, double *beta, int *rangeGroupInd, int *groupLen, double *lambda1, double *lambda2, int *innerIter, double *thresh, double *ldot, double *nullBeta, double *gamma, double *eta, int* betaIsZero, int& groupChange, int* isActive, int* useGroup, double *step, int *reset)
+void linSolver(double *X, double *y, double *w, int* index, int *nrow, int *ncol, int *numGroup, double *beta, int *rangeGroupInd, int *groupLen, double *lambda1, double *lambda2, int *innerIter, double *thresh, double *ldot, double *nullBeta, double *gamma, double *eta, int* betaIsZero, int& groupChange, int* isActive, int* useGroup, double *step, int *reset)
 {
   double *theta = new double[ncol[0]];
   int startInd = 0;
@@ -575,7 +583,7 @@ void linSolver(double *X, double *y, int* index, int *nrow, int *ncol, int *numG
  	  }
 
       // Calculating Null Gradient
-      linGradCalc(nrow, etaNull, y, ldot);
+      linGradCalc(nrow, etaNull, y, w, ldot);
 
       double *grad = NULL;
       grad = new double[groupLen[i]];
@@ -659,7 +667,7 @@ void linSolver(double *X, double *y, int* index, int *nrow, int *ncol, int *numG
 	    {
 	      count++;
 
-	      linGradCalc(nrow, eta, y ,ldot);
+	      linGradCalc(nrow, eta, y, w, ldot);
 
 	      for(int j = 0; j < groupLen[i]; j++)
 		  {		  
@@ -672,7 +680,7 @@ void linSolver(double *X, double *y, int* index, int *nrow, int *ncol, int *numG
 	      
 	      diff = -1;
 	      //	      t = 0.5;
-	      Lold = linNegLogLikelihoodCalc(nrow, eta, y);
+	      Lold = linNegLogLikelihoodCalc(nrow, eta, y, w);
 
 	      // Back-tracking
 	      while(diff < 0)
@@ -727,7 +735,7 @@ void linSolver(double *X, double *y, int* index, int *nrow, int *ncol, int *numG
 			  }
 		    }
 
-		    Lnew = linNegLogLikelihoodCalc(nrow, etaNew, y);
+		    Lnew = linNegLogLikelihoodCalc(nrow, etaNew, y, w);
 		    
 		    sqNormG = 0;
 		    iProd = 0;
@@ -775,7 +783,7 @@ void linSolver(double *X, double *y, int* index, int *nrow, int *ncol, int *numG
   delete [] theta;
 }
 
-int linNest(double *X, double* y, int* index, int *nrow, int *ncol, int *numGroup, int *rangeGroupInd, int *groupLen, double *lambda1, double *lambda2, double *beta, int *innerIter, int *outerIter, double *thresh, double *outerThresh, double *eta, double *gamma, int *betaIsZero, double *step, int *reset)
+int linNest(double *X, double* y, double* w, int* index, int *nrow, int *ncol, int *numGroup, int *rangeGroupInd, int *groupLen, double *lambda1, double *lambda2, double *beta, int *innerIter, int *outerIter, double *thresh, double *outerThresh, double *eta, double *gamma, int *betaIsZero, double *step, int *reset)
 {
   double* prob = NULL;
   prob = new double[nrow[0]];
@@ -809,7 +817,7 @@ int linNest(double *X, double* y, int* index, int *nrow, int *ncol, int *numGrou
   {
     groupChange = 0;
 
-    linSolver(X, y, index, nrow, ncol, numGroup, beta, rangeGroupInd, groupLen, lambda1, lambda2, innerIter, thresh, ldot, nullBeta, gamma, eta, betaIsZero, groupChange, isActive, useGroup, step, reset);
+    linSolver(X, y, w, index, nrow, ncol, numGroup, beta, rangeGroupInd, groupLen, lambda1, lambda2, innerIter, thresh, ldot, nullBeta, gamma, eta, betaIsZero, groupChange, isActive, useGroup, step, reset);
  
     while(outermostCounter < outerIter[0] && outermostCheck > outerThresh[0])
     {
@@ -824,7 +832,7 @@ int linNest(double *X, double* y, int* index, int *nrow, int *ncol, int *numGrou
 	    tempIsActive[i] = isActive[i];
 	  }
 
-      linSolver(X, y, index, nrow, ncol, numGroup, beta, rangeGroupInd, groupLen, lambda1, lambda2, innerIter, thresh, ldot, nullBeta, gamma, eta, betaIsZero, groupChange, isActive, tempIsActive, step, reset);
+      linSolver(X, y, w, index, nrow, ncol, numGroup, beta, rangeGroupInd, groupLen, lambda1, lambda2, innerIter, thresh, ldot, nullBeta, gamma, eta, betaIsZero, groupChange, isActive, tempIsActive, step, reset);
 
 	  outermostCheck = 0;
       for(int i = 0; i < p; i++)
