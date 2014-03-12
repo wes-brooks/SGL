@@ -19,8 +19,8 @@ SGL <- function(data, index, weights=NULL, type="linear", maxit=1000, thresh=0.0
       s2 = sum(weights * adamodel$residuals**2)/sum(weights)
       adapt = adamodel$coef
       adaweights = rep(1, length(adapt))
-      for (g in unique(group)) {
-          indx = which(group == g)
+      for (g in unique(index)) {
+          indx = which(index == g)
           adaweights[indx] = sqrt(sum(adapt[indx]**2))
       }
       X.adapt = sweep(X.normalized, 2, adaweights, '*')
