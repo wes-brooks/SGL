@@ -15,7 +15,7 @@ SGL <- function(data, index, weights=NULL, type="linear", maxit=1000, thresh=0.0
       meany = mean(Y)
       Y.centered = Y - meany
       
-      adamodel = lsfit(y=as.matrix(Y.centered), x=as.matrix(X.normalized), intercept=FALSE, wt=wt)
+      adamodel = lsfit(y=as.matrix(Y.centered), x=as.matrix(X.normalized), intercept=FALSE, wt=weights)
       s2 = sum(wt * adamodel$residuals**2)/sum(wt)
       adapt = adamodel$coef
       adaweights = rep(1, length(adapt))
