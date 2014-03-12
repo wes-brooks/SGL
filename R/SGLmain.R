@@ -16,7 +16,7 @@ SGL <- function(data, index, weights=NULL, type="linear", maxit=1000, thresh=0.0
       Y.centered = Y - meany
       
       adamodel = lsfit(y=as.matrix(Y.centered), x=as.matrix(X.normalized), intercept=FALSE, wt=weights)
-      s2 = sum(wt * adamodel$residuals**2)/sum(wt)
+      s2 = sum(weights * adamodel$residuals**2)/sum(weights)
       adapt = adamodel$coef
       adaweights = rep(1, length(adapt))
       for (g in unique(group)) {
@@ -55,9 +55,9 @@ SGL <- function(data, index, weights=NULL, type="linear", maxit=1000, thresh=0.0
         res[['residuals']] = resid = sweep(fitted, 1, Y, '-')
         res[['df']] = df = apply(beta, 2, function(x) sum(x!=0))
         
-        res[['BIC']] = apply(resid, 2, function(x) sum(wt*x**2)) / s2 + log(sum(wt))*df
-        res[['AIC']] = apply(resid, 2, function(x) sum(wt*x**2)) / s2 + 2*df
-        res[['AICc']] = apply(resid, 2, function(x) sum(wt*x**2)) / s2 + 2*df + 2*df*(df+1)/(sum(wt)-df-1)
+        res[['BIC']] = apply(resid, 2, function(x) sum(weights * x**2)) / s2 + log(sum(weights))*df
+        res[['AIC']] = apply(resid, 2, function(x) sum(weights * x**2)) / s2 + 2*df
+        res[['AICc']] = apply(resid, 2, function(x) sum(weights * x**2)) / s2 + 2*df + 2*df*(df+1)/(sum(weights)-df-1)
     }
     
     if(standardize == TRUE){
