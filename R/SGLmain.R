@@ -1,4 +1,4 @@
-SGL <- function(data, index, weights=NULL, type = "linear", maxit = 1000, thresh = 0.001, min.frac = 0.1, nlam = 20, gamma = 0.8, standardize = TRUE, verbose = FALSE, step = 1, reset = 10, alpha = 0.95, lambdas = NULL, adaptive=TRUE){
+SGL <- function(data, index, weights=NULL, type="linear", maxit=1000, thresh=0.001, min.frac=0.1, nlam=20, gamma=0.8, standardize=TRUE, verbose=FALSE, step=1, reset=10, alpha=0.95, lambdas=NULL, adaptive=TRUE){
   X.transform <- NULL
   if (is.null(weights)) {weights = rep(1,nrow(data$x))}
   
@@ -52,7 +52,7 @@ SGL <- function(data, index, weights=NULL, type = "linear", maxit = 1000, thresh
         Sol$beta = beta
         
         res[['fitted']] = fitted = sweep(as.matrix(X) %*% beta, 2, intercept, '+')
-        res[['resid']] = resid = sweep(fitted, 1, Y, '-')
+        res[['residuals']] = resid = sweep(fitted, 1, Y, '-')
         res[['df']] = df = apply(beta, 2, function(x) sum(x!=0))
         
         res[['BIC']] = apply(resid, 2, function(x) sum(wt*x**2)) / s2 + log(sum(wt))*df
