@@ -3,32 +3,36 @@ SGL <- function(data, index, weights=NULL, type="linear", maxit=1000, thresh=0.0
   if (is.null(weights)) {weights = rep(1,nrow(data$x))}
   
   if (adaptive) {
-      X = data$x
-      Y = data$y
-      
-      meanx = colMeans(X)
-      X.centered = sweep(X, 2, meanx, '-')
-      
-      normx = apply(X.centered, 2, function(x) {sqrt(sum(x**2))})
-      X.normalized = sweep(X.centered, 2, 1/normx, '*')
-      
-      meany = mean(Y)
-      Y.centered = Y - meany
-      
-      adamodel = lsfit(y=as.matrix(Y.centered), x=as.matrix(X.normalized), intercept=FALSE, wt=weights)
-      s2 = sum(weights * adamodel$residuals**2)/sum(weights)
-      adapt = adamodel$coef
-      adaweights = rep(1, length(adapt))
-      for (g in unique(index)) {
-          indx = which(index == g)
-          adaweights[indx] = sqrt(sum(adapt[indx]**2))
-      }
-      X.adapt = sweep(X.normalized, 2, adaweights, '*')
-      
-      data = list(x=X.adapt, y=Y.centered)
+    X = data$x
+    Y = data$y
+    
+    #Center the X matrix:
+    meanx = colMeans(X)
+    X.centered = sweep(X, 2, meanx, '-')
+    
+    #Scale the X matrix to unit norm:
+    normx = apply(X.centered, 2, function(x) {sqrt(sum(x**2))})
+    X.normalized = sweep(X.centered, 2, 1/normx, '*')
+    
+    #Center the Y matrix:
+    meany = mean(Y)
+    Y.centered = Y - meany
+    
+    #Scale the X matrix adaptively for the group lasso:
+    adamodel = lsfit(y=as.matrix(Y.centered), x=as.matrix(X.normalized), intercept=FALSE, wt=weights)
+    s2 = sum(weights * adamodel$residuals**2)/sum(weights)
+    adapt = adamodel$coef
+    adaweights = rep(1, length(adapt))
+    for (g in unique(index)) {
+      indx = which(index == g)
+      adaweights[indx] = sqrt(sum(adapt[indx]**2))
+    }
+    X.adapt = sweep(X.normalized, 2, adaweights, '*')
+    
+    data = list(x=X.adapt, y=Y.centered)
   }
 
-  if(standardize == TRUE){
+  if(standardize){
     X <- data$x
     means <- apply(X,2,mean)
     X <- t(t(X) - means)
@@ -38,50 +42,50 @@ SGL <- function(data, index, weights=NULL, type="linear", maxit=1000, thresh=0.0
     X.transform <- list(X.scale = var, X.means = means)
   }
 
-  if(type == "linear"){
-    if(standardize == TRUE){
+  if (type == "linear") {
+    if (standardize) {
       intercept <- mean(data$y)
       data$y <- data$y - intercept
     }
+    
     Sol <- oneDim(data, index, weights, thresh, inner.iter = maxit, outer.iter = maxit, outer.thresh = thresh, min.frac = min.frac, nlam = nlam, lambdas = lambdas, gamma = gamma, verbose = verbose, step = step, reset = reset, alpha = alpha)
     
     res = list()
     if (adaptive) {
-        beta = sweep(Sol$beta, 1, adaweights/normx, '*')
-        intercept = as.vector(meany - t(as.matrix(meanx)) %*% beta)
-        Sol$beta = beta
-        
-        res[['fitted']] = fitted = sweep(as.matrix(X) %*% beta, 2, intercept, '+')
-        res[['residuals']] = resid = sweep(fitted, 1, Y, '-')
-        res[['df']] = df = apply(beta, 2, function(x) sum(x!=0))
-        
-        res[['BIC']] = apply(resid, 2, function(x) sum(weights * x**2)) / s2 + log(sum(weights))*df
-        res[['AIC']] = apply(resid, 2, function(x) sum(weights * x**2)) / s2 + 2*df
-        res[['AICc']] = apply(resid, 2, function(x) sum(weights * x**2)) / s2 + 2*df + 2*df*(df+1)/(sum(weights)-df-1)
+      beta = sweep(Sol$beta, 1, adaweights/normx, '*')
+      intercept = as.vector(meany - t(as.matrix(meanx)) %*% beta)
+      Sol$beta = beta
+  
+      res[['fitted']] = fitted = sweep(as.matrix(X) %*% beta, 2, intercept, '+')
+      res[['residuals']] = resid = sweep(fitted, 1, Y, '-')
+      res[['df']] = df = apply(beta, 2, function(x) sum(x!=0))
+      
+      res[['BIC']] = apply(resid, 2, function(x) sum(weights * x**2)) / s2 + log(sum(weights))*df
+      res[['AIC']] = apply(resid, 2, function(x) sum(weights * x**2)) / s2 + 2*df
+      res[['AICc']] = apply(resid, 2, function(x) sum(weights * x**2)) / s2 + 2*df + 2*df*(df+1)/(sum(weights)-df-1)
     }
     
-    if(standardize == TRUE){
+    if (adaptive) {
+      Sol <- list(beta=Sol$beta, lambdas=Sol$lambdas, type=type, intercept=intercept, X.transform=X.transform, weights=weights, results=res)
+    } else if (standardize) {
       Sol <- list(beta=Sol$beta, lambdas=Sol$lambdas, type=type, intercept=intercept, X.transform=X.transform)
-    }
-     if(standardize == FALSE){
-      Sol <- list(beta=Sol$beta, lambdas=Sol$lambdas, type=type, X.transform=X.transform, weights=weights, results=res)
+    } else {
+      Sol <- list(beta=Sol$beta, lambdas=Sol$lambdas, type=type, X.transform=X.transform)
     }
   }
 
-  if(type == "logit"){
+  if (type == "logit") {
     Sol <- oneDimLogit(data, index, thresh = thresh, inner.iter = maxit, outer.iter = maxit, outer.thresh = thresh, min.frac = min.frac, nlam = nlam, lambdas = lambdas, gamma = gamma, verbose = verbose, step = step, alpha = alpha, reset = reset)
-
     Sol <- list(beta = Sol$beta, lambdas = Sol$lambdas, type = type, intercept = Sol$intercept, X.transform = X.transform)
-
   }
 
-  if(type == "cox"){
-    Sol <- oneDimCox(data, index, thresh = thresh, inner.iter = maxit, outer.iter = maxit, outer.thresh = thresh, min.frac = min.frac, nlam = nlam, lambdas = lambdas, gamma = gamma, verbose = verbose, step = step, alpha = alpha, reset = reset) 
-
-  Sol = list(beta = Sol$beta, lambdas = Sol$lambdas, type = type, X.transform = X.transform)
+  if (type == "cox") {
+    Sol <- oneDimCox(data, index, thresh = thresh, inner.iter = maxit, outer.iter = maxit, outer.thresh = thresh, min.frac = min.frac, nlam = nlam, lambdas = lambdas, gamma = gamma, verbose = verbose, step = step, alpha = alpha, reset = reset)
+    Sol = list(beta = Sol$beta, lambdas = Sol$lambdas, type = type, X.transform = X.transform)
   }
+  
   class(Sol) = "SGL"
-    return(Sol)
+  return(Sol)
 }
 
 
