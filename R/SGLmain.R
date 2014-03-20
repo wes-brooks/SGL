@@ -62,12 +62,14 @@ SGL <- function(data, index, weights=NULL, type="linear", maxit=1000, thresh=0.0
       #Calculate the degrees of freedom used in estimating the coefficients.
       #See Wang and Leng, 2008 (Computational Statistics and Data Analysis (52) pg5279), for details 
       not.zip = matrix(0, nrow=0, ncol=length(lambdas))
-      group.df = matrix(0, nrow=0, ncol=length(lambdas))
+      group.df = matrix(0, nrow=0, ncol=ncol(beta))
       for (g in unique(index)) {
         indx = which(index == g)
         adaweight = adaweights[indx][1]
-        
-        group.df = rbind(group.df, apply(beta, 2, function(b) ifelse(!all(b[indx]==0), 1 - (length(indx)-1) * sqrt(sum(b[indx]**2)) / adaweight, 0)))
+print(beta)
+print(apply(beta, 2, function(b) ifelse(!all(b[indx]==0), 1 - (length(indx)-1) * sqrt(sum(b[indx]**2)) / adaweight, 0)))        
+print(adaweight)
+group.df = rbind(group.df, apply(beta, 2, function(b) ifelse(!all(b[indx]==0), 1 - (length(indx)-1) * sqrt(sum(b[indx]**2)) / adaweight, 0)))
       }
       
       res[['df']] = df = apply(group.df, 2, sum)
