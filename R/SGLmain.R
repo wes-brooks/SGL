@@ -58,8 +58,19 @@ SGL <- function(data, index, weights=NULL, type="linear", maxit=1000, thresh=0.0
   
       res[['fitted']] = fitted = sweep(as.matrix(X) %*% beta, 2, intercept, '+')
       res[['residuals']] = resid = sweep(fitted, 1, Y, '-')
-      res[['df']] = df = apply(beta, 2, function(x) sum(x!=0))
       
+      #Calculate the degrees of freedom used in estimating the coefficients.
+      #See Wang and Leng, 2008 (Computational Statistics and Data Analysis (52) pg5279), for details 
+      not.zip = matrix(0, nrow=0, ncol=length(lambdas))
+      group.df = matrix(0, nrow=0, ncol=length(lambdas))
+      for (g in unique(index)) {
+        indx = which(index == g)
+        adaweight = adaweights[indx][1]
+        
+        group.df = rbind(group.df, apply(beta, 2, function(b) ifelse(!all(b[indx]==0), 1 - (length(indx)-1) * sqrt(sum(b[indx]**2)) / adaweight, 0)))
+      }
+      
+      res[['df']] = df = apply(group.df, 2, sum)
       res[['BIC']] = apply(resid, 2, function(x) sum(weights * x**2)) / s2 + log(sum(weights))*df
       res[['AIC']] = apply(resid, 2, function(x) sum(weights * x**2)) / s2 + 2*df
       res[['AICc']] = apply(resid, 2, function(x) sum(weights * x**2)) / s2 + 2*df + 2*df*(df+1)/(sum(weights)-df-1)
