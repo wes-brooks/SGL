@@ -66,10 +66,8 @@ SGL <- function(data, index, weights=NULL, type="linear", maxit=1000, thresh=0.0
       for (g in unique(index)) {
         indx = which(index == g)
         adaweight = adaweights[indx][1]
-print(beta)
-print(apply(beta, 2, function(b) ifelse(!all(b[indx]==0), 1 + (length(indx)-1) * sqrt(sum(b[indx]**2)) / adaweight, 0)))        
-print(adaweight)
-group.df = rbind(group.df, apply(beta, 2, function(b) ifelse(!all(b[indx]==0), 1 + (length(indx)-1) * sqrt(sum(b[indx]**2)) / adaweight, 0)))
+        
+        group.df = rbind(group.df, apply(beta, 2, function(b) ifelse(!all(b[indx]==0), 1 + (length(indx)-1) * sqrt(sum(b[indx]**2)) / adaweight, 0)))
       }
       
       res[['df']] = df = apply(group.df, 2, sum)
