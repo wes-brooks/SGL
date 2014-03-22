@@ -19,9 +19,18 @@ SGL <- function(data, index, weights=NULL, type="linear", maxit=1000, thresh=0.0
     Y.centered = Y - meany
     
     #Scale the X matrix adaptively for the group lasso:
-    adamodel = lsfit(y=as.matrix(Y.centered), x=as.matrix(X.normalized), intercept=FALSE, wt=weights)
+    data = list()
+    if (type=='linear') {
+      adamodel = lsfit(y=as.matrix(Y.centered), x=as.matrix(X.normalized), wt=weights)
+      data[['y']] = Y.centered
+    } else if (type=='logit') {
+      adamodel = glm(Y~X.normalized, weights=weights, family='binomial')
+      data[['y']] = Y
+    }
+    p = ncol(X)
+    
     s2 = sum(weights * adamodel$residuals**2)/sum(weights)
-    adapt = adamodel$coef
+    adapt = adamodel$coef[(1:p)+1]
     adaweights = rep(1, length(adapt))
     for (g in unique(index)) {
       indx = which(index == g)
@@ -29,7 +38,8 @@ SGL <- function(data, index, weights=NULL, type="linear", maxit=1000, thresh=0.0
     }
     X.adapt = sweep(X.normalized, 2, adaweights, '*')
     
-    data = list(x=X.adapt, y=Y.centered)
+    #data = list(x=X.adapt, y=Y.centered)
+    data[['x']] = X.adapt
   }
 
   if(standardize){
@@ -48,7 +58,7 @@ SGL <- function(data, index, weights=NULL, type="linear", maxit=1000, thresh=0.0
       data$y <- data$y - intercept
     }
     
-    Sol <- oneDim(data, index, weights, thresh, inner.iter = maxit, outer.iter = maxit, outer.thresh = thresh, min.frac = min.frac, nlam = nlam, lambdas = lambdas, gamma = gamma, verbose = verbose, step = step, reset = reset, alpha = alpha)
+    Sol <- oneDim(data, index, weights=weights, thresh, inner.iter = maxit, outer.iter = maxit, outer.thresh = thresh, min.frac = min.frac, nlam = nlam, lambdas = lambdas, gamma = gamma, verbose = verbose, step = step, reset = reset, alpha = alpha)
     
     res = list()
     if (adaptive) {
@@ -86,8 +96,22 @@ SGL <- function(data, index, weights=NULL, type="linear", maxit=1000, thresh=0.0
   }
 
   if (type == "logit") {
-    Sol <- oneDimLogit(data, index, thresh = thresh, inner.iter = maxit, outer.iter = maxit, outer.thresh = thresh, min.frac = min.frac, nlam = nlam, lambdas = lambdas, gamma = gamma, verbose = verbose, step = step, alpha = alpha, reset = reset)
-    Sol <- list(beta = Sol$beta, lambdas = Sol$lambdas, type = type, intercept = Sol$intercept, X.transform = X.transform)
+    Sol <- oneDimLogit(data, index, weights=weights, thresh=thresh, inner.iter=maxit, outer.iter=maxit, outer.thresh=thresh, min.frac=min.frac, nlam=nlam, lambdas=lambdas, gamma=gamma, verbose=verbose, step=step, alpha=alpha, reset=reset)
+    
+    res = list()
+    if (adaptive) {
+      beta = sweep(Sol$beta, 1, adaweights/normx, '*')
+      Sol$beta = beta
+      
+      res[['fitted']] = fitted = sweep(as.matrix(X) %*% beta, 2, Sol$intercepts, '+')
+      res[['residuals']] = resid = sweep(fitted, 1, Y, '-')
+      res[['df']] = df = apply(beta, 2, function(x) sum(x!=0))
+      
+      res[['BIC']] = apply(resid, 2, function(x) sum(weights * x**2)) / s2 + log(sum(weights))*df
+      res[['AIC']] = apply(resid, 2, function(x) sum(weights * x**2)) / s2 + 2*df
+      res[['AICc']] = apply(resid, 2, function(x) sum(weights * x**2)) / s2 + 2*df + 2*df*(df+1)/(sum(weights)-df-1)
+    }
+    Sol <- list(beta=Sol$beta, lambdas=Sol$lambdas, type=type, intercept=Sol$intercepts, X.transform=X.transform)
   }
 
   if (type == "cox") {

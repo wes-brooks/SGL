@@ -64,9 +64,9 @@ betterPathCalc <- function(data, index, weights, alpha = 0.95, min.frac = 0.05, 
     betas <- matrix(0, nrow = ncol(X), ncol = nlam)
 
     eta <- rep(0,n)
-    intercepts <- mean(y)
+    intercepts <- sum(weights*y) / sum(weights)
     eta = eta + intercepts
-    m.y <- mean(y)
+    m.y <- sum(weights*y) / sum(weights)
     resp <- m.y*m.y*(1-m.y) - (y-m.y)
   }
 
