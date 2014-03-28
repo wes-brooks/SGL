@@ -1,4 +1,4 @@
-SGL <- function(data, index, weights=NULL, type="linear", maxit=1000, thresh=0.001, min.frac=0.1, nlam=20, gamma=0.8, standardize=TRUE, verbose=FALSE, step=1, reset=10, alpha=0.95, lambdas=NULL, adaptive=TRUE){
+SGL <- function(data, index, weights=NULL, type="linear", maxit=1000, thresh=0.001, min.frac=0.1, nlam=20, gamma=0.8, standardize=TRUE, verbose=FALSE, step=1, reset=10, alpha=0.95, lambdas=NULL, adaptive=TRUE, unpenalized=NULL){
   X.transform <- NULL
   if (is.null(weights)) {weights = rep(1,nrow(data$x))}
   
@@ -22,24 +22,35 @@ SGL <- function(data, index, weights=NULL, type="linear", maxit=1000, thresh=0.0
     adamodel = lsfit(y=as.matrix(Y.centered), x=as.matrix(X.normalized), intercept=FALSE, wt=weights)
     s2 = sum(weights * adamodel$residuals**2)/sum(weights)
     adapt = adamodel$coef
-    adaweights = rep(1, length(adapt))
-    for (g in unique(index)) {
-      indx = which(index == g)
-      adaweights[indx] = sqrt(sum(adapt[indx]**2))
-    }
-    X.adapt = sweep(X.normalized, 2, adaweights, '*')
     
-    data = list(x=X.adapt, y=Y.centered)
+    groups = unique(index)
+    n.g = length(groups)
+    adaweights = rep(1, n.g)
+    for (i in 1:n.g) {
+      g = groups[i]
+      indx = which(index == g)
+      #adaweights[indx] = sqrt(sum(adapt[indx]**2))
+      adaweights[indx] = 1 / sqrt(sum(adapt[indx]**2))
+    }
+    #X.adapt = sweep(X.normalized, 2, adaweights, '*')
+    
+    #Indicate the groups whose coefficients are unpenalized:
+    for (g in unpenalized) {
+      indx = which(groups == g)
+      adaweights[indx] = 0
+    }
+    
+    data = list(x=X.normalized, y=Y.centered)
   }
 
-  if(standardize){
+  if (standardize) {
     X <- data$x
     means <- apply(X,2,mean)
     X <- t(t(X) - means)
     var <- apply(X,2,function(x)(sqrt(sum(x^2))))
     X <- t(t(X) / var)
     data$x <- X
-    X.transform <- list(X.scale = var, X.means = means)
+    X.transform <- list(X.scale=var, X.means=means)
   }
 
   if (type == "linear") {
@@ -48,11 +59,12 @@ SGL <- function(data, index, weights=NULL, type="linear", maxit=1000, thresh=0.0
       data$y <- data$y - intercept
     }
     
-    Sol <- oneDim(data, index, weights, thresh, inner.iter = maxit, outer.iter = maxit, outer.thresh = thresh, min.frac = min.frac, nlam = nlam, lambdas = lambdas, gamma = gamma, verbose = verbose, step = step, reset = reset, alpha = alpha)
+    Sol <- oneDim(data, index, weights, adaweights=adaweights, thresh, inner.iter = maxit, outer.iter = maxit, outer.thresh = thresh, min.frac = min.frac, nlam = nlam, lambdas = lambdas, gamma = gamma, verbose = verbose, step = step, reset = reset, alpha = alpha)
     
     res = list()
     if (adaptive) {
-      beta = sweep(Sol$beta, 1, adaweights/normx, '*')
+      beta = sweep(Sol$beta, 1, 1/normx, '*')
+      #beta = sweep(Sol$beta, 1, adaweights/normx, '*')
       intercept = as.vector(meany - t(as.matrix(meanx)) %*% beta)
       Sol$beta = beta
   
@@ -67,7 +79,8 @@ SGL <- function(data, index, weights=NULL, type="linear", maxit=1000, thresh=0.0
         indx = which(index == g)
         adaweight = adaweights[indx][1]
         
-        group.df = rbind(group.df, apply(beta, 2, function(b) ifelse(!all(b[indx]==0), 1 + (length(indx)-1) * sqrt(sum(b[indx]**2)) / adaweight, 0)))
+        #group.df = rbind(group.df, apply(beta, 2, function(b) ifelse(!all(b[indx]==0), 1 + (length(indx)-1) * sqrt(sum(b[indx]**2)) / adaweight, 0)))
+        group.df = rbind(group.df, apply(beta, 2, function(b) ifelse(!all(b[indx]==0), 1 + (length(indx)-1) * sqrt(sum(b[indx]**2)) * adaweight, 0)))
       }
       
       res[['df']] = df = apply(group.df, 2, sum)

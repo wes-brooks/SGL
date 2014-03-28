@@ -545,7 +545,7 @@ void Cox(int *riskSetInd, int *riskSet, int *numDeath, int *status, int *nDeath,
   }
   
   
-  void linSolver(double *X, double *y, double *w, int* index, int *nrow, int *ncol, int *numGroup, double *beta, int *rangeGroupInd, int *groupLen, double *lambda1, double *lambda2, int *innerIter, double *thresh, double *ldot, double *nullBeta, double *gamma, double *eta, int* betaIsZero, int& groupChange, int* isActive, int* useGroup, double *step, int *reset)
+  void linSolver(double *X, double *y, double *w, int* index, double* adaweights, int *nrow, int *ncol, int *numGroup, double *beta, int *rangeGroupInd, int *groupLen, double *lambda1, double *lambda2, int *innerIter, double *thresh, double *ldot, double *nullBeta, double *gamma, double *eta, int* betaIsZero, int& groupChange, int* isActive, int* useGroup, double *step, int *reset)
   {
     double *theta = new double[ncol[0]];
     int startInd = 0;
@@ -612,14 +612,15 @@ void Cox(int *riskSetInd, int *riskSet, int *numDeath, int *status, int *nDeath,
   	      grad[j] = 0;
   	    }
   	  }
+      
   
         zeroCheck = 0;
         for(int j = 0; j < groupLen[i]; j++)
   	  {
   	    zeroCheck = zeroCheck + pow(grad[j],2);
   	  }
-  
-        if(zeroCheck <= pow(lambda2[0],2)*groupLen[i])  //Or not?
+
+        if(zeroCheck <= pow(adaweights[i],2)*pow(lambda2[0],2)*groupLen[i])  //Or not?
   	  {
   	    if(betaIsZero[i] == 0)
   	    {
@@ -710,7 +711,7 @@ void Cox(int *riskSetInd, int *riskSet, int *numDeath, int *status, int *nDeath,
   		    norm = sqrt(norm);
   
   		    if(norm != 0){
-  		      uOp = (1 - lambda2[0]*sqrt(double(groupLen[i]))*t/norm);   //Or not?
+  		      uOp = (1 - adaweights[i]*lambda2[0]*sqrt(double(groupLen[i]))*t/norm);   //Or not?
   		    }
   		    else{uOp = 0;}
   
@@ -783,7 +784,7 @@ void Cox(int *riskSetInd, int *riskSet, int *numDeath, int *status, int *nDeath,
     delete [] theta;
   }
   
-  int linNest(double *X, double* y, double* w, int* index, int *nrow, int *ncol, int *numGroup, int *rangeGroupInd, int *groupLen, double *lambda1, double *lambda2, double *beta, int *innerIter, int *outerIter, double *thresh, double *outerThresh, double *eta, double *gamma, int *betaIsZero, double *step, int *reset)
+  int linNest(double *X, double* y, double* w, int* index, double* adaweights, int *nrow, int *ncol, int *numGroup, int *rangeGroupInd, int *groupLen, double *lambda1, double *lambda2, double *beta, int *innerIter, int *outerIter, double *thresh, double *outerThresh, double *eta, double *gamma, int *betaIsZero, double *step, int *reset)
   {
     double* prob = NULL;
     prob = new double[nrow[0]];
@@ -817,7 +818,7 @@ void Cox(int *riskSetInd, int *riskSet, int *numDeath, int *status, int *nDeath,
     {
       groupChange = 0;
   
-      linSolver(X, y, w, index, nrow, ncol, numGroup, beta, rangeGroupInd, groupLen, lambda1, lambda2, innerIter, thresh, ldot, nullBeta, gamma, eta, betaIsZero, groupChange, isActive, useGroup, step, reset);
+      linSolver(X, y, w, index, adaweights, nrow, ncol, numGroup, beta, rangeGroupInd, groupLen, lambda1, lambda2, innerIter, thresh, ldot, nullBeta, gamma, eta, betaIsZero, groupChange, isActive, useGroup, step, reset);
    
       while(outermostCounter < outerIter[0] && outermostCheck > outerThresh[0])
       {
@@ -832,7 +833,7 @@ void Cox(int *riskSetInd, int *riskSet, int *numDeath, int *status, int *nDeath,
   	    tempIsActive[i] = isActive[i];
   	  }
   
-        linSolver(X, y, w, index, nrow, ncol, numGroup, beta, rangeGroupInd, groupLen, lambda1, lambda2, innerIter, thresh, ldot, nullBeta, gamma, eta, betaIsZero, groupChange, isActive, tempIsActive, step, reset);
+        linSolver(X, y, w, index, adaweights, nrow, ncol, numGroup, beta, rangeGroupInd, groupLen, lambda1, lambda2, innerIter, thresh, ldot, nullBeta, gamma, eta, betaIsZero, groupChange, isActive, tempIsActive, step, reset);
   
   	  outermostCheck = 0;
         for(int i = 0; i < p; i++)
