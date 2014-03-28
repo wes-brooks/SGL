@@ -28,7 +28,7 @@ SGL <- function(data, index, weights=NULL, type="linear", maxit=1000, thresh=0.0
     adaweights = rep(1, n.g)
     for (i in 1:n.g) {
       g = groups[i]
-      indx = which(index == g)
+      indx = which(groups == g)
       #adaweights[indx] = sqrt(sum(adapt[indx]**2))
       adaweights[indx] = 1 / sqrt(sum(adapt[indx]**2))
     }
@@ -75,9 +75,11 @@ SGL <- function(data, index, weights=NULL, type="linear", maxit=1000, thresh=0.0
       #See Wang and Leng, 2008 (Computational Statistics and Data Analysis (52) pg5279), for details 
       not.zip = matrix(0, nrow=0, ncol=length(lambdas))
       group.df = matrix(0, nrow=0, ncol=ncol(beta))
-      for (g in unique(index)) {
-        indx = which(index == g)
-        adaweight = adaweights[indx][1]
+      
+      groups = unique(index)
+      for (i in 1:length(groups)) {
+        indx = which(index == groups[i])
+        adaweight = adaweights[i]
         
         #group.df = rbind(group.df, apply(beta, 2, function(b) ifelse(!all(b[indx]==0), 1 + (length(indx)-1) * sqrt(sum(b[indx]**2)) / adaweight, 0)))
         group.df = rbind(group.df, apply(beta, 2, function(b) ifelse(!all(b[indx]==0), 1 + (length(indx)-1) * sqrt(sum(b[indx]**2)) * adaweight, 0)))

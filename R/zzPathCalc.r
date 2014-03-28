@@ -15,21 +15,25 @@ betterPathCalc <- function(data, index, weights, adaweights, alpha=0.95, min.fra
     n <- nrow(X)
     p <- ncol(X)
 
-    ## Setting up group lasso stuff ##     
+    #put the groups and adaweights in numerical order
+    groups <- unique(index)
+    ord.g = order(groups)
+    groups = groups[ord.g]
+    adaweights = adaweights[ord.g]
+    
+    #Reorder columns of X so that groups are contiguous
     ord <- order(index)
     index <- index[ord]
     X <- X[,ord]
     unOrd <- match(1:length(ord),ord)
 
-    ## Coming up with other C++ info ##    
-    groups <- unique(index)
+    ## Coming up with other C++ info ##        
     num.groups <- length(groups)
     range.group.ind <- rep(0,(num.groups+1))
     for (i in 1:num.groups) {
       range.group.ind[i] <- min(which(index == groups[i])) - 1
     }
     range.group.ind[num.groups + 1] <- ncol(X)
-  
     group.length <- diff(range.group.ind)
     
     #Account for unpenalized covariates when finding the smallest lambda that excludes all possible covariates.
@@ -218,11 +222,8 @@ betterPathCalc <- function(data, index, weights, adaweights, alpha=0.95, min.fra
       if (adaweights[i] > 0) {
         ind <- groups[i]
         X.fit <- X[,which(index == ind)]
-print(X.fit)        
         cors <- t(X.fit) %*% diag(weights) %*% resp / adaweights[i]
-print(cors)/sum(weights)
         lambda.max[i] <- sqrt(sum(cors^2)) / sqrt(group.length[i])
-print(lambda.max)/sum(weights)
       }
     }
   }

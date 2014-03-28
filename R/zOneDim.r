@@ -9,23 +9,27 @@ function(data, index, weights, adaweights, thresh=0.0001, nlam=20, lambdas=NULL,
   n <- nrow(X)
   p <- ncol(X)
 
-  ## Setting up group lasso stuff ##
+  #put the groups and adaweights in numerical order
+  groups <- unique(index)
+  ord.g = order(groups)
+  groups = groups[ord.g]
+  adaweights = adaweights[ord.g]
+  
+  #Reorder columns of X so that groups are contiguous
   ord <- order(index)
   index <- index[ord]
   X <- X[,ord]
   unOrd <- match(1:length(ord),ord)
-
+  
   ## Coming up with other C++ info ##
-  groups <- unique(index)
   num.groups <- length(groups)
   range.group.ind <- rep(0,(num.groups+1))
   for(i in 1:num.groups){
     range.group.ind[i] <- min(which(index == groups[i])) - 1
   }
   range.group.ind[num.groups+1] <- ncol(X)
-
   group.length <- diff(range.group.ind)
-
+  
   ## DONE SETTING UP C STUFF ##
 
   #alpha <- sqrt(2*log(p))/(1+sqrt(2*log(num.groups)/min(group.length)) + sqrt(2*log(p)))
