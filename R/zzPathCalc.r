@@ -1,4 +1,4 @@
-betterPathCalc <- function(data, index, weights, alpha = 0.95, min.frac = 0.05, nlam = 20, type = "linear") {
+betterPathCalc <- function(data, index, weights, adaweights, alpha=0.95, min.frac=0.05, nlam=20, type="linear") {
   reset <- 10
   step <- 1
   gamma <- 0.8
@@ -9,29 +9,40 @@ betterPathCalc <- function(data, index, weights, alpha = 0.95, min.frac = 0.05, 
   outer.thresh = thresh
   
   n <- nrow(data$x)
-
   if (type=="linear") {
     X <- data$x
     resp <- data$y
     n <- nrow(X)
     p <- ncol(X)
 
-    ## Setting up group lasso stuff ##     
+    #put the groups and adaweights in numerical order
+    groups <- unique(index)
+    ord.g = order(groups)
+    groups = groups[ord.g]
+    adaweights = adaweights[ord.g]
+    
+    #Reorder columns of X so that groups are contiguous
     ord <- order(index)
     index <- index[ord]
     X <- X[,ord]
     unOrd <- match(1:length(ord),ord)
 
-    ## Coming up with other C++ info ##    
-    groups <- unique(index)
+    ## Coming up with other C++ info ##        
     num.groups <- length(groups)
     range.group.ind <- rep(0,(num.groups+1))
     for (i in 1:num.groups) {
       range.group.ind[i] <- min(which(index == groups[i])) - 1
     }
     range.group.ind[num.groups + 1] <- ncol(X)
-  
     group.length <- diff(range.group.ind)
+    
+    #Account for unpenalized covariates when finding the smallest lambda that excludes all possible covariates.
+    unpen.indx = which(adaweights==0)
+    n.unpen = length(unpen.indx)
+    if (n.unpen != 0) {
+      X.unpen <- as.matrix(X[,unpen.indx])
+      resp = lm(resp~X.unpen-1, weights=weights)$resid
+    }
   }
 
   if (type=="logit") {
@@ -151,9 +162,9 @@ betterPathCalc <- function(data, index, weights, alpha = 0.95, min.frac = 0.05, 
 
     resp <- junk1$y * junk1$weights
   }
-
+  
   lambda.max <- rep(0,num.groups)
-
+  
   if ((alpha != 0)*(alpha != 1)) {
     for (i in 1:num.groups) {
       ind <- groups[i]
@@ -208,14 +219,16 @@ betterPathCalc <- function(data, index, weights, alpha = 0.95, min.frac = 0.05, 
   }
   if(alpha == 0) {
     for (i in 1:num.groups) {
-      ind <- groups[i]
-      X.fit <- X[,which(index == ind)]
-      cors <- t(X.fit) %*% diag(weights) %*% resp
-      lambda.max[i] <- sqrt(sum(cors^2)) / sqrt(group.length[i])
+      if (adaweights[i] > 0) {
+        ind <- groups[i]
+        X.fit <- X[,which(index == ind)]
+        cors <- t(X.fit) %*% diag(weights) %*% resp / adaweights[i]
+        lambda.max[i] <- sqrt(sum(cors^2)) / sqrt(group.length[i])
+      }
     }
   }
   max.lam <- max(lambda.max)
   min.lam <- min.frac*max.lam
-  lambdas <- exp(seq(log(max.lam),log(min.lam), (log(min.lam) - log(max.lam))/(nlam-1)))
+  lambdas <- exp(seq(log(max.lam),log(min.lam), length.out=nlam))
   return(lambdas/sum(weights))
 }
