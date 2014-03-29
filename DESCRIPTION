@@ -5,7 +5,7 @@ Title: Fit a GLM (or cox model) with a combination of lasso and group
 Version: 1.1
 Date: 2010-10-12
 Author: Noah Simon, Jerome Friedman, Trevor Hastie, and Rob Tibshirani, Wesley Brooks
-Maintainer: Wesley Brooks <>
+Maintainer: Wesley Brooks <brooks.wesley@gmail.com>
 Description: Fit a regularized generalized linear model via penalized
         maximum likelihood.  The model is fit for a path of values of
         the penalty parameter. Fits linear, logistic and Cox models.

@@ -12,11 +12,11 @@ test.logit = function() {
   n = nrow(X)
   p = ncol(X)
   
-  X.aug = as.matrix(cbind(X, X * (longley$Year-yr)))
-  group = c(1,2,1,2)
+  X.aug = as.matrix(cbind(X, X * (longley$Year-yr), longley$Year-yr))
+  group = c(1,2,1,2,0)
   
   data = list(x=X.aug, y=Y)
-  model = SGL(data, group, wt, alpha=0, min.frac=0.0001, nlam=100, standardize=FALSE, adaptive=TRUE, type='logit')
+  model = SGL(data, group, wt, alpha=0, min.frac=0.0001, nlam=100, standardize=FALSE, adaptive=TRUE, type='logit', unpenalized=c(0))
 
   m2 = SGL(data, group, w2, alpha=0, min.frac=0.0001, nlam=100, standardize=FALSE, adaptive=TRUE, type='logit')
 

@@ -110,7 +110,7 @@ SGL <- function(data, index, weights=NULL, type="linear", maxit=1000, thresh=0.0
   }
 
   if (type == "logit") {
-    Sol <- oneDimLogit(data, index, weights=weights, thresh=thresh, inner.iter=maxit, outer.iter=maxit, outer.thresh=thresh, min.frac=min.frac, nlam=nlam, lambdas=lambdas, gamma=gamma, verbose=verbose, step=step, alpha=alpha, reset=reset)
+    Sol <- oneDimLogit(data, index, weights=weights, adaweights=adaweights, thresh=thresh, inner.iter=maxit, outer.iter=maxit, outer.thresh=thresh, min.frac=min.frac, nlam=nlam, lambdas=lambdas, gamma=gamma, verbose=verbose, step=step, alpha=alpha, reset=reset)
       
     res = list()
     if (adaptive) {
@@ -130,7 +130,8 @@ SGL <- function(data, index, weights=NULL, type="linear", maxit=1000, thresh=0.0
         indx = which(index == g)
         adaweight = adaweights[indx][1]
         
-        group.df = rbind(group.df, apply(beta, 2, function(b) ifelse(!all(b[indx]==0), 1 + (length(indx)-1) * sqrt(sum(b[indx]**2)) / adaweight, 0)))
+        #group.df = rbind(group.df, apply(beta, 2, function(b) ifelse(!all(b[indx]==0), 1 + (length(indx)-1) * sqrt(sum(b[indx]**2)) / adaweight, 0)))
+        group.df = rbind(group.df, apply(beta, 2, function(b) ifelse(!all(b[indx]==0), 1 + (length(indx)-1) * sqrt(sum(b[indx]**2)) * adaweight, 0)))
       }
       
       res[['df']] = df = apply(group.df, 2, sum)

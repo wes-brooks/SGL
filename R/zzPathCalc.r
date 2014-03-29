@@ -34,6 +34,7 @@ betterPathCalc <- function(data, index, weights, adaweights, alpha=0.95, min.fra
       range.group.ind[i] <- min(which(index == groups[i])) - 1
     }
     range.group.ind[num.groups + 1] <- ncol(X)
+    
     group.length <- diff(range.group.ind)
     
     #Account for unpenalized covariates when finding the smallest lambda that excludes all possible covariates.
@@ -47,18 +48,23 @@ betterPathCalc <- function(data, index, weights, adaweights, alpha=0.95, min.fra
 
   if (type=="logit") {
     X <- data$x
-    y <- data$y
+    r <- data$y
     n <- nrow(X)
     p <- ncol(X)
 
-    ## Setting up group lasso stuff ## 
+    #put the groups and adaweights in numerical order
+    groups <- unique(index)
+    ord.g = order(groups)
+    groups = groups[ord.g]
+    adaweights = adaweights[ord.g]
+    
+    #Reorder columns of X so that groups are contiguous
     ord <- order(index)
     index <- index[ord]
     X <- X[,ord]
     unOrd <- match(1:length(ord),ord)
 
-    ## Coming up with other C++ info ##
-    groups <- unique(index)
+    ## Coming up with other C++ info ##        
     num.groups <- length(groups)
     range.group.ind <- rep(0,(num.groups+1))
     for (i in 1:num.groups) {
@@ -67,18 +73,27 @@ betterPathCalc <- function(data, index, weights, adaweights, alpha=0.95, min.fra
     range.group.ind[num.groups + 1] <- ncol(X)
   
     group.length <- diff(range.group.ind)
+    
+    #Account for unpenalized covariates when finding the smallest lambda that excludes all possible covariates.
+    unpen.indx = which(adaweights==0)
+    n.unpen = length(unpen.indx)
+    if (n.unpen != 0) {
+      X.unpen <- as.matrix(X[,unpen.indx])
+      r = residuals(glm(r~X.unpen-1, weights=weights, family='binomial'), type='response')
+    }
+    
     beta.naught <- rep(0,ncol(X))
     beta <- beta.naught
   
     beta.is.zero <- rep(1, num.groups)
     beta.old <- rep(0, ncol(X))
-    betas <- matrix(0, nrow = ncol(X), ncol = nlam)
+    betas <- matrix(0, nrow=ncol(X), ncol=nlam)
 
     eta <- rep(0,n)
-    intercepts <- sum(weights*y) / sum(weights)
+    intercepts <- sum(weights*r) / sum(weights)
     eta = eta + intercepts
-    m.y <- sum(weights*y) / sum(weights)
-    resp <- m.y*m.y*(1-m.y) - (y-m.y)
+    m.r <- sum(weights*r) / sum(weights)
+    resp <- m.r*m.r*(1-m.r) - (r-m.r)
   }
 
   if (type=="cox") {

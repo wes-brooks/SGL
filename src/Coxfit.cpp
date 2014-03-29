@@ -922,7 +922,7 @@ void Cox(int *riskSetInd, int *riskSet, int *numDeath, int *status, int *nDeath,
   }
 
 
-  void logitSolver(double *X, int *y, double *w, int* index, int *nrow, int *ncol, int *numGroup, double *beta, int *rangeGroupInd, int *groupLen, double *lambda1, double *lambda2, int *innerIter, double *thresh, double *ldot, double *nullBeta, double *gamma, double *eta, int* betaIsZero, int& groupChange, int* isActive, int* useGroup, double *prob, double *betaZero, double *step)
+  void logitSolver(double *X, int *y, double *w, int* index, double* adaweights, int *nrow, int *ncol, int *numGroup, double *beta, int *rangeGroupInd, int *groupLen, double *lambda1, double *lambda2, int *innerIter, double *thresh, double *ldot, double *nullBeta, double *gamma, double *eta, int* betaIsZero, int& groupChange, int* isActive, int* useGroup, double *prob, double *betaZero, double *step)
   {
     double *theta = new double[ncol[0]];
     double *thetaNew = new double[ncol[0]];
@@ -997,7 +997,7 @@ void Cox(int *riskSetInd, int *riskSet, int *numDeath, int *status, int *nDeath,
       	  zeroCheck = zeroCheck + pow(grad[j],2);
       	}
   
-        if(zeroCheck <= pow(lambda2[0],2) * groupLen[i])   //Or not?
+        if(zeroCheck <= pow(adaweights[i],2) * pow(lambda2[0],2) * groupLen[i])   //Or not?
   	    {
   	      if(betaIsZero[i] == 0)
   	      {
@@ -1092,7 +1092,7 @@ void Cox(int *riskSetInd, int *riskSet, int *numDeath, int *status, int *nDeath,
     
         		  if(norm != 0)
               {
-        		    uOp = (1 - lambda2[0]*sqrt(double(groupLen[i]))*t/norm);   //Or not?
+        		    uOp = (1 - adaweights[i]*lambda2[0]*sqrt(double(groupLen[i]))*t/norm);   //Or not?
         		  }
         		  else{uOp = 0;}
     
@@ -1184,7 +1184,7 @@ void Cox(int *riskSetInd, int *riskSet, int *numDeath, int *status, int *nDeath,
   
   
   
-  int logitNest(double *X, int* y, double *w, int* index, int *nrow, int *ncol, int *numGroup, int *rangeGroupInd, int *groupLen, double *lambda1, double *lambda2, double *beta, int *innerIter, int *outerIter, double *thresh, double *outerThresh, double *eta, double *gamma, int *betaIsZero, double* betaZero, double *step)
+  int logitNest(double *X, int* y, double *w, int* index, double* adaweights, int *nrow, int *ncol, int *numGroup, int *rangeGroupInd, int *groupLen, double *lambda1, double *lambda2, double *beta, int *innerIter, int *outerIter, double *thresh, double *outerThresh, double *eta, double *gamma, int *betaIsZero, double* betaZero, double *step)
   {
     double oldBetaZero = betaZero[0];
     double* prob = NULL;
@@ -1219,7 +1219,7 @@ void Cox(int *riskSetInd, int *riskSet, int *numDeath, int *status, int *nDeath,
     {
       groupChange = 0;
       
-      logitSolver(X, y, w, index, nrow, ncol, numGroup, beta, rangeGroupInd, groupLen, lambda1, lambda2, innerIter, thresh, ldot, nullBeta, gamma, eta, betaIsZero, groupChange, isActive, useGroup, prob, betaZero, step);
+      logitSolver(X, y, w, index, adaweights, nrow, ncol, numGroup, beta, rangeGroupInd, groupLen, lambda1, lambda2, innerIter, thresh, ldot, nullBeta, gamma, eta, betaIsZero, groupChange, isActive, useGroup, prob, betaZero, step);
   
       while(outermostCounter < outerIter[0] && outermostCheck > outerThresh[0])
       {
@@ -1235,7 +1235,7 @@ void Cox(int *riskSetInd, int *riskSet, int *numDeath, int *status, int *nDeath,
       	  tempIsActive[i] = isActive[i];
       	}
   
-        logitSolver(X, y, w, index, nrow, ncol, numGroup, beta, rangeGroupInd, groupLen, lambda1, lambda2, innerIter, thresh, ldot, nullBeta, gamma, eta, betaIsZero, groupChange, tempIsActive, isActive, prob, betaZero, step);
+        logitSolver(X, y, w, index, adaweights, nrow, ncol, numGroup, beta, rangeGroupInd, groupLen, lambda1, lambda2, innerIter, thresh, ldot, nullBeta, gamma, eta, betaIsZero, groupChange, tempIsActive, isActive, prob, betaZero, step);
   
   	    outermostCheck = 0;
         for(int i = 0; i < p; i++)
