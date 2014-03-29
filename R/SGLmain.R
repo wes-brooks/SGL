@@ -97,10 +97,11 @@ SGL <- function(data, index, weights=NULL, type="linear", maxit=1000, thresh=0.0
 
   if (type == "logit") {
     Sol <- oneDimLogit(data, index, weights=weights, thresh=thresh, inner.iter=maxit, outer.iter=maxit, outer.thresh=thresh, min.frac=min.frac, nlam=nlam, lambdas=lambdas, gamma=gamma, verbose=verbose, step=step, alpha=alpha, reset=reset)
-    
+      
     res = list()
     if (adaptive) {
       beta = sweep(Sol$beta, 1, adaweights/normx, '*')
+      intercept = as.vector(Sol$intercepts - t(as.matrix(meanx)) %*% beta)
       Sol$beta = beta
       
       res[['fitted']] = fitted = sweep(as.matrix(X) %*% beta, 2, Sol$intercepts, '+')
@@ -125,7 +126,7 @@ SGL <- function(data, index, weights=NULL, type="linear", maxit=1000, thresh=0.0
     
     #Note that the intercepts are not correct (just pulling them from the Sol object for now)
     if (adaptive) {
-      Sol <- list(beta=Sol$beta, lambdas=Sol$lambdas, type=type, intercept=Sol$intercepts, X.transform=X.transform, weights=weights, results=res)
+      Sol <- list(beta=Sol$beta, lambdas=Sol$lambdas, type=type, intercept=intercept, X.transform=X.transform, weights=weights, results=res)
     } else if (standardize) {
       Sol <- list(beta=Sol$beta, lambdas=Sol$lambdas, type=type, intercept=intercept, X.transform=X.transform)
     } else {

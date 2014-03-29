@@ -13,7 +13,7 @@ oneDimLogit <- function(data, index, weights, thresh = 0.0001, lambdas=NULL, bet
   index <- index[ord]
   X <- X[,ord]
   unOrd <- match(1:length(ord),ord)
-
+  
   ## Coming up with other C++ info ##
   groups <- unique(index)
   num.groups <- length(groups)
@@ -32,13 +32,8 @@ oneDimLogit <- function(data, index, weights, thresh = 0.0001, lambdas=NULL, bet
   beta <- matrix(0, nrow = ncol(X), ncol = nlam)
 
   eta <- rep(0,n)
-print(eta)
-print(n)
-print(sum(y))
-print(nlam)
   intercepts <- rep(log(sum(y)) - log(n-sum(y)), nlam)
   eta = eta + intercepts[1]
-print(eta)
 
   beta.is.zero <- rep(1, num.groups)
   beta.old <- rep(0, ncol(X))
