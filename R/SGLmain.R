@@ -1,4 +1,4 @@
-SGL <- function(data, index, weights=NULL, type="linear", maxit=1000, thresh=0.001, min.frac=0.1, nlam=20, gamma=0.8, standardize=TRUE, verbose=FALSE, step=1, reset=10, alpha=0.95, lambdas=NULL, adaptive=TRUE, unpenalized=NULL){
+SGL <- function(data, index, weights=NULL, type="linear", maxit=1000, thresh=0.001, min.frac=0.1, nlam=20, delta=2, gamma=0.8, standardize=TRUE, verbose=FALSE, step=1, reset=10, alpha=0.95, lambdas=NULL, adaptive=TRUE, unpenalized=NULL){
   X.transform <- NULL
   if (is.null(weights)) {weights = rep(1,nrow(data$x))}
   
@@ -29,10 +29,8 @@ SGL <- function(data, index, weights=NULL, type="linear", maxit=1000, thresh=0.0
     for (i in 1:n.g) {
       g = groups[i]
       indx = which(groups == g)
-      #adaweights[indx] = sqrt(sum(adapt[indx]**2))
-      adaweights[indx] = 1 / sqrt(sum(adapt[indx]**2))
+      adaweights[indx] = 1 / sqrt(sum(adapt[indx]**2))**delta
     }
-    #X.adapt = sweep(X.normalized, 2, adaweights, '*')
     
     #Indicate the groups whose coefficients are unpenalized:
     for (g in unpenalized) {
