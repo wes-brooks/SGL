@@ -83,14 +83,16 @@ SGL <- function(data, index, weights=NULL, type="linear", maxit=1000, thresh=0.0
         group.df = rbind(group.df, apply(beta, 2, function(b) ifelse(!all(b[indx]==0), 1 + (length(indx)-1) * sqrt(sum(b[indx]**2)) * adaweight, 0)))
       }
       
-      res[['df']] = df = apply(group.df, 2, sum)
+      #res[['df']] = df = apply(group.df, 2, sum)
+      #Naive df:
+      res[['df']] = df = drop(apply(beta, 2, function(b) sum(b!=0)))
       res[['BIC']] = apply(resid, 2, function(x) sum(weights * x**2)) / s2 + log(sum(weights))*df
       res[['AIC']] = apply(resid, 2, function(x) sum(weights * x**2)) / s2 + 2*df
       res[['AICc']] = apply(resid, 2, function(x) sum(weights * x**2)) / s2 + 2*df + 2*df*(df+1)/(sum(weights)-df-1)
     }
     
     if (adaptive) {
-      Sol <- list(beta=Sol$beta, lambdas=Sol$lambdas, type=type, intercept=intercept, X.transform=X.transform, weights=weights, results=res)
+      Sol <- list(beta=Sol$beta, lambdas=Sol$lambdas, type=type, intercept=intercept, X.transform=X.transform, LS.coefs=adapt, adaweights=adaweights, weights=weights, results=res)
     } else if (standardize) {
       Sol <- list(beta=Sol$beta, lambdas=Sol$lambdas, type=type, intercept=intercept, X.transform=X.transform)
     } else {
