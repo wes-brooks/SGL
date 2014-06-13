@@ -13,11 +13,11 @@ SGL <- function(data, index, weights=NULL, type="linear", maxit=1000, thresh=0.0
     #Scale the X matrix to unit norm:
     normx = apply(X.centered, 2, function(x) {sqrt(sum(x**2))})
     X.normalized = sweep(X.centered, 2, 1/normx, '*')
-    
+
     #Center the Y matrix:
     meany = mean(Y)
     Y.centered = Y - meany
-    
+
     #Scale the X matrix adaptively for the group lasso:
     adamodel = lsfit(y=as.matrix(Y.centered), x=as.matrix(X.normalized), intercept=FALSE, wt=weights)
     s2 = sum(weights * adamodel$residuals**2)/sum(weights)
@@ -57,7 +57,7 @@ SGL <- function(data, index, weights=NULL, type="linear", maxit=1000, thresh=0.0
       data$y <- data$y - intercept
     }
     
-    Sol <- oneDim(data, index, weights, adaweights=adaweights, thresh, inner.iter = maxit, outer.iter = maxit, outer.thresh = thresh, min.frac = min.frac, nlam = nlam, lambdas = lambdas, gamma = gamma, verbose = verbose, step = step, reset = reset, alpha = alpha)
+    Sol <- oneDim(data, index, weights, adaweights=adaweights, thresh, inner.iter=maxit, outer.iter=maxit, outer.thresh=thresh, min.frac=min.frac, nlam=nlam, lambdas=lambdas, gamma=gamma, verbose=verbose, step=step, reset=reset, alpha=alpha)
     
     res = list()
     if (adaptive) {
