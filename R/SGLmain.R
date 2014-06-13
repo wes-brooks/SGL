@@ -84,8 +84,8 @@ SGL <- function(data, index, weights=NULL, type="linear", maxit=1000, thresh=0.0
       }
       
       #res[['df']] = df = apply(group.df, 2, sum)
-      #Naive df:
-      res[['df']] = df = drop(apply(beta, 2, function(b) sum(b!=0)))
+      #Naive df (add one for the intercept, which is estimated but does not appear in b)
+      res[['df']] = df = drop(apply(beta, 2, function(b) sum(b!=0) + 1))
       res[['BIC']] = apply(resid, 2, function(x) sum(weights * x**2)) / s2 + log(sum(weights))*df
       res[['AIC']] = apply(resid, 2, function(x) sum(weights * x**2)) / s2 + 2*df
       res[['AICc']] = apply(resid, 2, function(x) sum(weights * x**2)) / s2 + 2*df + 2*df*(df+1)/(sum(weights)-df-1)
