@@ -42,13 +42,13 @@ SGL <- function(data, index, weights=NULL, type="linear", maxit=1000, thresh=0.0
     }
     
     if (standardize) {
-    X <- data$x
-    means <- apply(X,2,mean)
-    X <- t(t(X) - means)
-    var <- apply(X,2,function(x)(sqrt(sum(x^2))))
-    X <- t(t(X) / var)
-    data$x <- X
-    X.transform <- list(X.scale=var, X.means=means)
+        X <- data$x
+        means <- apply(X,2,mean)
+        X <- t(t(X) - means)
+        var <- apply(X,2,function(x)(sqrt(sum(x^2))))
+        X <- t(t(X) / var)
+        data$x <- X
+        X.transform <- list(X.scale=var, X.means=means)
     }
     
     if (type == "linear") {
