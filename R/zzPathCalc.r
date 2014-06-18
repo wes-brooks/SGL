@@ -230,7 +230,7 @@ betterPathCalc <- function(data, index, weights, adaweights, alpha=0.95, min.fra
         }
     }
     
-    max.lam <- max(lambda.max) * 10
+    max.lam <- max(lambda.max) * 10 #The factor of ten is because we dont properly compute the lambda.max, somehow due to unpenalized columns.
     min.lam <- min.frac * max.lam
     lambdas <- exp(seq(log(max.lam), log(min.lam), length.out=nlam))
     return(lambdas/sum(weights))
