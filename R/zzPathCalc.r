@@ -37,12 +37,12 @@ betterPathCalc <- function(data, index, weights, adaweights, alpha=0.95, min.fra
         group.length <- diff(range.group.ind)
 
         #Account for unpenalized covariates when finding the smallest lambda that excludes all possible covariates.
-        unpen.indx = which(adaweights[index]==0)
-        n.unpen = length(unpen.indx)
-        if (n.unpen != 0) {
-            X.unpen <- as.matrix(X[,unpen.indx])
-            resp = lm(resp~X.unpen-1, weights=weights)$resid
-        }
+        #unpen.indx = which(adaweights[index]==0)
+        #n.unpen = length(unpen.indx)
+        #if (n.unpen != 0) {
+        #    X.unpen <- as.matrix(X[,unpen.indx])
+        #    resp = lm(resp~X.unpen-1, weights=weights)$resid
+        #}
     }
 
     if (type=="logit") {
@@ -230,7 +230,7 @@ betterPathCalc <- function(data, index, weights, adaweights, alpha=0.95, min.fra
         }
     }
     
-    max.lam <- max(lambda.max) * 10 #The factor of ten is because we dont properly compute the lambda.max, somehow due to unpenalized columns.
+    max.lam <- max(lambda.max) * 1.1 #The factor of ten is because we dont properly compute the lambda.max, somehow due to unpenalized columns.
     min.lam <- min.frac * max.lam
     lambdas <- exp(seq(log(max.lam), log(min.lam), length.out=nlam))
     return(lambdas/sum(weights))
