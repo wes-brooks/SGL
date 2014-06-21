@@ -56,10 +56,14 @@ SGL <- function(data, index, weights=NULL, type="linear", maxit=1000, thresh=0.0
     
         res = list()
         if (adaptive) {
+        
+            #Return the weighted mean to the intercept:
             beta = Sol$beta
-            intercept = wmeany
+            beta[1,] = beta[1,] + wmeany
+            intercept = beta[1,]
+            Sol$beta = beta
             
-            res[['fitted']] = fitted = as.matrix(X) %*% beta + intercept
+            res[['fitted']] = fitted = as.matrix(X) %*% beta
             res[['residuals']] = resid = sweep(fitted, 1, Y, '-')
             
             #Calculate the degrees of freedom used in estimating the coefficients.
