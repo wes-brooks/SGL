@@ -16,7 +16,9 @@ function(data, index, weights, adaweights, thresh=0.0001, nlam=20, lambdas=NULL,
   adaweights = adaweights[ord.g]
   
   #Reorder columns of X so that groups are contiguous
+#print(index)
   ord <- order(index)
+#print(ord)
   index <- index[ord]
   X <- X[,ord]
   unOrd <- match(1:length(ord),ord)

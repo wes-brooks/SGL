@@ -22,8 +22,13 @@ betterPathCalc <- function(data, index, weights, adaweights, alpha=0.95, min.fra
         adaweights = adaweights[ord.g]
 
         #Reorder columns of X so that groups are contiguous
+#print("zzPathCalc")
+#print(index)
         ord <- order(index)
         index <- index[ord]
+#print(ord)
+#print(dim(X))
+#print(head(X))
         X <- X[,ord]
         unOrd <- match(1:length(ord),ord)
 
@@ -220,6 +225,7 @@ betterPathCalc <- function(data, index, weights, adaweights, alpha=0.95, min.fra
     }
     
     if(alpha == 0) {
+#print(adaweights)
         for (i in 1:num.groups) {
             if (adaweights[i] > 0) {
                 ind <- groups[i]
