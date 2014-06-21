@@ -22,13 +22,8 @@ betterPathCalc <- function(data, index, weights, adaweights, alpha=0.95, min.fra
         adaweights = adaweights[ord.g]
 
         #Reorder columns of X so that groups are contiguous
-#print("zzPathCalc")
-#print(index)
         ord <- order(index)
         index <- index[ord]
-#print(ord)
-#print(dim(X))
-#print(head(X))
         X <- X[,ord]
         unOrd <- match(1:length(ord),ord)
 
@@ -40,14 +35,6 @@ betterPathCalc <- function(data, index, weights, adaweights, alpha=0.95, min.fra
         }
         range.group.ind[num.groups + 1] <- ncol(X)
         group.length <- diff(range.group.ind)
-
-        #Account for unpenalized covariates when finding the smallest lambda that excludes all possible covariates.
-        #unpen.indx = which(adaweights[index]==0)
-        #n.unpen = length(unpen.indx)
-        #if (n.unpen != 0) {
-        #    X.unpen <- as.matrix(X[,unpen.indx])
-        #    resp = lm(resp~X.unpen-1, weights=weights)$resid
-        #}
     }
 
     if (type=="logit") {
@@ -220,12 +207,13 @@ betterPathCalc <- function(data, index, weights, adaweights, alpha=0.95, min.fra
         }
     }
     
+    #Pure lasso:
     if (alpha == 1) {
         lambda.max <- abs(t(X) %*% diag(weights) %*% resp)
     }
     
+    #Pure group lasso:
     if(alpha == 0) {
-#print(adaweights)
         for (i in 1:num.groups) {
             if (adaweights[i] > 0) {
                 ind <- groups[i]
@@ -236,7 +224,7 @@ betterPathCalc <- function(data, index, weights, adaweights, alpha=0.95, min.fra
         }
     }
     
-    max.lam <- max(lambda.max) * 1.1 #The factor of ten is because we dont properly compute the lambda.max, somehow due to unpenalized columns.
+    max.lam <- max(lambda.max) * 1.1 #The factor of 1.1 is to make sure the first lambda has only unpenalized covariates.
     min.lam <- min.frac * max.lam
     lambdas <- exp(seq(log(max.lam), log(min.lam), length.out=nlam))
     return(lambdas/sum(weights))

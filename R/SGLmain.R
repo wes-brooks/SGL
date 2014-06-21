@@ -5,68 +5,34 @@ SGL <- function(data, index, weights=NULL, type="linear", maxit=1000, thresh=0.0
     if (adaptive) {
         X = data$x
         Y = data$y
-#print(head(X))
-
-#x.unpen = matrix(NA, ncol=0, nrow=nrow(X))     
-#unpen.indx = vector()   
-#for (g in unpenalized) {
-#    indx = which(index == g)
-#    x.unpen=cbind(x.unpen, X[,indx])
-#    unpen.index = c(unpen.indx, rep(g, length(indx)))
-#    X = X[,-indx]
-#    index = index[-indx]
-#}
-#print(head(X)) 
-    
-        #Center the X matrix:
-        #meanx = colMeans(X)
-        #X.centered = sweep(X, 2, meanx, '-')
-        #X.centered[,1] = rep(1, nrow(X)) #Was part of an old intercept-compensating scheme
-#print(head(X.centered))        
-
-
-
-        #Scale the X matrix to unit norm:
-        #normx = apply(X.centered, 2, function(x) {norm=sqrt(sum(x**2)); if(norm==0) {return(1)} else {return(norm)}})
-#print(normx)
-        #X.normalized = sweep(X.centered, 2, 1/normx, '*')
-        #X.adapt = cbind(x.unpen, X.normalized)
-        #index = c(unpen.index, index)
-        #index.adapt = c(rep(FALSE, ncol(x.unpen)), rep(TRUE, ncol(X.normalized)))
-#print(head(X.adapt))        
+        
         #Center the Y matrix:
-        #meany = mean(Y)
-        #Y.centered = Y - meany
         wmeany = weighted.mean(as.vector(Y), weights)
         Y.centered = Y - wmeany
         
-        #Scale the X matrix adaptively for the group lasso:
-adamodel = lsfit(y=as.matrix(Y.centered), x=as.matrix(X), intercept=FALSE, wt=weights)
-        #adamodel = lsfit(y=as.matrix(Y.centered), x=as.matrix(X.normalized), intercept=FALSE, wt=weights)
+        #Find the adaptive group weights:
+        adamodel = lsfit(y=as.matrix(Y.centered), x=as.matrix(X), intercept=FALSE, wt=weights)
         s2 = sum(weights * adamodel$residuals**2)/sum(weights)
         adapt = adamodel$coef  #[-1] #Dont include the intercept for the adaptive weights
-#print(adapt)
-#print(index)
+
         groups = unique(index)
-#print(groups)
         n.g = length(groups)
         adaweights = rep(1, n.g)
         for (i in 1:n.g) {
             g = groups[i]
-if (g %in% unpenalized) {
-    adaweights[i]=0
-} else {
-            indx = which(index == g)
-            adaweights[i] = 1 / sqrt(sum(adapt[indx]**2))**delta
-}    
+            if (g %in% unpenalized) {
+                adaweights[i]=0
+            } else {
+                indx = which(index == g)
+                adaweights[i] = 1 / sqrt(sum(adapt[indx]**2))**delta
+            }    
         }
-#print(adaweights)        
+              
         #Indicate the groups whose coefficients are unpenalized:
         for (g in unpenalized) {
             indx = which(groups == g)
             adaweights[indx] = 0
-        }
-#print(adaweights)        
+        }      
         data = list(x=X, y=Y.centered)
     }
     
@@ -91,14 +57,7 @@ if (g %in% unpenalized) {
         res = list()
         if (adaptive) {
             beta = Sol$beta
-#print(beta)
-            #beta[index.adapt,] = sweep(beta[index.adapt,], 1, 1/normx, '*')
-#print(beta)
-            #beta = sweep(Sol$beta, 1, adaweights/normx, '*')
-            #intercept = as.vector(meany - t(as.matrix(meanx)) %*% beta)
-intercept = wmeany
-#print(meanx)
-            #Sol$beta = beta
+            intercept = wmeany
             
             res[['fitted']] = fitted = as.matrix(X) %*% beta + intercept
             res[['residuals']] = resid = sweep(fitted, 1, Y, '-')
